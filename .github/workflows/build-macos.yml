@@ -43,20 +43,25 @@ jobs:
       
       - name: Build macOS executable with PyInstaller
         run: |
-          # Create PyInstaller spec or use command line
-          pyinstaller --name="VideoConverter" \
-            --windowed \
-            --onedir \
-            --add-binary="$(which ffmpeg):." \
-            --icon=icon.ico \
-            --noconfirm \
-            converter_app.py || \
-          pyinstaller --name="VideoConverter" \
-            --windowed \
-            --onedir \
-            --add-binary="$(which ffmpeg):." \
-            --noconfirm \
-            converter_app.py
+          # Check if icon exists and build accordingly
+          if [ -f "icon.ico" ]; then
+            echo "Building with icon..."
+            pyinstaller --name="VideoConverter" \
+              --windowed \
+              --onedir \
+              --add-binary="$(which ffmpeg):." \
+              --icon=icon.ico \
+              --noconfirm \
+              converter_app.py
+          else
+            echo "Building without icon (icon.ico not found)..."
+            pyinstaller --name="VideoConverter" \
+              --windowed \
+              --onedir \
+              --add-binary="$(which ffmpeg):." \
+              --noconfirm \
+              converter_app.py
+          fi
           
           echo "Build completed!"
           ls -la dist/
