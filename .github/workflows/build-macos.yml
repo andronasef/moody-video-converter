@@ -1,0 +1,92 @@
+name: Build macOS App with FFmpeg
+
+on:
+  workflow_dispatch:  # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Download and setup FFmpeg
+        run: |
+          echo "Downloading FFmpeg for macOS..."
+          brew install ffmpeg
+          
+          # Verify ffmpeg installation
+          ffmpeg -version
+          
+          # Find ffmpeg location
+          FFMPEG_PATH=$(which ffmpeg)
+          echo "FFmpeg located at: $FFMPEG_PATH"
+          
+          # Create ffmpeg directory in project for bundling
+          mkdir -p ffmpeg_binaries
+          cp $FFMPEG_PATH ffmpeg_binaries/
+          
+          # Also copy required libraries
+          FFMPEG_DIR=$(dirname $FFMPEG_PATH)
+          echo "FFmpeg directory: $FFMPEG_DIR"
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Build macOS executable with PyInstaller
+        run: |
+          # Create PyInstaller spec or use command line
+          pyinstaller --name="VideoConverter" \
+            --windowed \
+            --onedir \
+            --add-binary="$(which ffmpeg):." \
+            --icon=icon.ico \
+            --noconfirm \
+            converter_app.py || \
+          pyinstaller --name="VideoConverter" \
+            --windowed \
+            --onedir \
+            --add-binary="$(which ffmpeg):." \
+            --noconfirm \
+            converter_app.py
+          
+          echo "Build completed!"
+          ls -la dist/
+      
+      - name: Create distributable archive
+        run: |
+          cd dist
+          zip -r VideoConverter-macOS.zip VideoConverter.app
+          cd ..
+          mv dist/VideoConverter-macOS.zip .
+          
+          echo "Archive created successfully!"
+          ls -lh VideoConverter-macOS.zip
+      
+      - name: Upload macOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoConverter-macOS
+          path: VideoConverter-macOS.zip
+          retention-days: 30
+      
+      - name: Display download instructions
+        run: |
+          echo "✅ Build completed successfully!"
+          echo ""
+          echo "📦 The macOS application has been built and is available as an artifact."
+          echo ""
+          echo "To download:"
+          echo "1. Go to the 'Summary' page of this workflow run"
+          echo "2. Scroll down to the 'Artifacts' section"
+          echo "3. Click on 'VideoConverter-macOS' to download the ZIP file"
+          echo ""
+          echo "The artifact will be available for 30 days."
