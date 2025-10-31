@@ -1,0 +1,67 @@
+name: Build FFmpeg for macOS
+
+on:
+  workflow_dispatch:  # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  build-ffmpeg:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Install build dependencies
+        run: |
+          brew install automake fdk-aac git lame libass libtool libvorbis libvpx \
+          opus sdl shtool texi2html theora wget x264 x265 xvid nasm pkg-config
+
+      - name: Download FFmpeg source
+        run: |
+          wget https://ffmpeg.org/releases/ffmpeg-6.1.tar.xz
+          tar xf ffmpeg-6.1.tar.xz
+          cd ffmpeg-6.1
+
+      - name: Configure FFmpeg
+        run: |
+          cd ffmpeg-6.1
+          ./configure \
+            --prefix=/tmp/ffmpeg-build \
+            --enable-gpl \
+            --enable-nonfree \
+            --enable-libass \
+            --enable-libfdk-aac \
+            --enable-libfreetype \
+            --enable-libmp3lame \
+            --enable-libopus \
+            --enable-libtheora \
+            --enable-libvorbis \
+            --enable-libvpx \
+            --enable-libx264 \
+            --enable-libx265 \
+            --enable-libxvid
+
+      - name: Build FFmpeg
+        run: |
+          cd ffmpeg-6.1
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Install FFmpeg
+        run: |
+          cd ffmpeg-6.1
+          make install
+
+      - name: Package FFmpeg binaries
+        run: |
+          cd /tmp/ffmpeg-build
+          tar -czf ffmpeg-macos-$(uname -m).tar.gz bin/
+
+      - name: Upload FFmpeg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-macos-${{ runner.arch }}
+          path: /tmp/ffmpeg-build/ffmpeg-macos-*.tar.gz
+          retention-days: 30
+
+      - name: Display completion message
+        run: |
+          echo "✅ FFmpeg build completed successfully!"
+          echo "📦 Download the artifact from the Actions run page"
+          echo "Architecture: $(uname -m)"
