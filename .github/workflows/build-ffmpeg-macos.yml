@@ -18,6 +18,7 @@ jobs:
       - name: Download FFmpeg source
         run: |
           wget https://ffmpeg.org/releases/ffmpeg-6.1.tar.xz
+          echo "9b16b8731d78e596b4be0d720428ca42df642bb2d78342881ff7f5bc29fc9623  ffmpeg-6.1.tar.xz" | shasum -a 256 -c -
           tar xf ffmpeg-6.1.tar.xz
 
       - name: Configure FFmpeg
