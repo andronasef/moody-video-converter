@@ -13,17 +13,16 @@ jobs:
       - name: Install build dependencies
         run: |
           brew install automake fdk-aac git lame libass libtool libvorbis libvpx \
-          opus sdl shtool texi2html theora wget x264 x265 xvid nasm pkg-config
+          opus sdl shtool texi2html theora wget x264 x265 xvid nasm pkg-config freetype
 
       - name: Download FFmpeg source
         run: |
           wget https://ffmpeg.org/releases/ffmpeg-6.1.tar.xz
           tar xf ffmpeg-6.1.tar.xz
-          cd ffmpeg-6.1
 
       - name: Configure FFmpeg
+        working-directory: ffmpeg-6.1
         run: |
-          cd ffmpeg-6.1
           ./configure \
             --prefix=/tmp/ffmpeg-build \
             --enable-gpl \
@@ -41,24 +40,26 @@ jobs:
             --enable-libxvid
 
       - name: Build FFmpeg
+        working-directory: ffmpeg-6.1
         run: |
-          cd ffmpeg-6.1
           make -j$(sysctl -n hw.ncpu)
 
       - name: Install FFmpeg
+        working-directory: ffmpeg-6.1
         run: |
-          cd ffmpeg-6.1
           make install
 
       - name: Package FFmpeg binaries
         run: |
           cd /tmp/ffmpeg-build
-          tar -czf ffmpeg-macos-$(uname -m).tar.gz bin/
+          ARCH=$(uname -m)
+          tar -czf ffmpeg-macos-${ARCH}.tar.gz bin/
+          echo "FFMPEG_ARCH=${ARCH}" >> $GITHUB_ENV
 
       - name: Upload FFmpeg artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpeg-macos-${{ runner.arch }}
+          name: ffmpeg-macos-${{ env.FFMPEG_ARCH }}
           path: /tmp/ffmpeg-build/ffmpeg-macos-*.tar.gz
           retention-days: 30
 
