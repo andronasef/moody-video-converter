@@ -161,8 +161,12 @@ class VideoConverterApp(ctk.CTk):
             output_path = os.path.join(directory, output_filename)
 
             try:
-                (
-                    ffmpeg.input(video_path)
+                # Get input stream
+                input_stream = ffmpeg.input(video_path)
+                
+                # Apply video filters to video stream
+                video = (
+                    input_stream.video
                     .filter(
                         "scale", w=1080, h=1920, force_original_aspect_ratio="decrease"
                     )
@@ -174,7 +178,14 @@ class VideoConverterApp(ctk.CTk):
                         y="(oh-ih)/2",
                         color="black",
                     )
-                    .output(output_path, vcodec="libx264", acodec="copy")
+                )
+                
+                # Get audio stream
+                audio = input_stream.audio
+                
+                # Map both video and audio to output
+                (
+                    ffmpeg.output(video, audio, output_path, vcodec="libx264", acodec="copy")
                     .run(cmd=ffmpeg_executable, overwrite_output=True, quiet=True)
                 )
                 # Update UI on success
